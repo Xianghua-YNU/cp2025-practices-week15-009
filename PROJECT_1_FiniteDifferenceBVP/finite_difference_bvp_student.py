@@ -161,42 +161,27 @@ def solve_bvp_scipy(n_initial_points=11):
         tuple: (x_solution, y_solution)
             x_solution (np.ndarray): 解的 x 坐标数组
             y_solution (np.ndarray): 解的 y 坐标数组
-    
-    TODO: 实现 solve_bvp 方法
-    Hints:
-    1. 创建初始网格 x_initial
-    2. 创建初始猜测 y_initial (2×n 数组)
-    3. 调用 solve_bvp 函数
-    4. 检查求解是否成功并提取解
     """
-    # 创建初始网格 - 均匀分布
+    # Step 1: 创建初始网格
     x_initial = np.linspace(0, 5, n_initial_points)
     
-    # 改进初始猜测：使用更合理的初始猜测
+    # Step 2: 创建初始猜测
     y_initial = np.zeros((2, n_initial_points))
-    # y的初始猜测：从0到3的线性变化
-    y_initial[0] = 3 * x_initial / 5
-    # y'的初始猜测：常数0.6
-    y_initial[1] = 0.6 * np.ones(n_initial_points)
+    y_initial[0] = np.linspace(0, 3, n_initial_points)  # y(x) 的初始猜测
+    y_initial[1] = np.ones(n_initial_points) * 0.6      # y'(x) 的初始猜测
     
-    # 调用solve_bvp，调整参数以获得更好的收敛性
-    sol = solve_bvp(ode_system_for_solve_bvp, 
-                   boundary_conditions_for_solve_bvp,
-                   x_initial, y_initial,
-                   tol=1e-8,  # 更严格的容差
-                   max_nodes=10000)  # 允许更多节点
+    # Step 3: 调用 solve_bvp
+    solution = solve_bvp(ode_system_for_solve_bvp, boundary_conditions_for_solve_bvp, 
+                         x_initial, y_initial)
     
-    if not sol.success:
-        print("Warning: solve_bvp did not converge successfully")
-        print("Message:", sol.message)
-        print("Status:", sol.status)
+    # Step 4: 提取解
+    if solution.success:
+        x_solution = solution.x
+        y_solution = solution.y[0]  # 只取 y(x)，不要 y'(x)
+        return x_solution, y_solution
+    else:
+        raise RuntimeError("solve_bvp failed to converge")
     
-    # 在密集网格上评估解
-    x_solution = np.linspace(0, 5, 100)
-    y_solution = sol.sol(x_solution)[0]
-    
-    return x_solution, y_solution
-
 # ============================================================================
 # 主程序：测试和比较两种方法
 # ============================================================================
