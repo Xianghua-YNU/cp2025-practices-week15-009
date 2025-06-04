@@ -40,6 +40,7 @@ def ode_system_shooting(t, y):
     Hint: Return [y[1], -np.pi*(y[0]+1)/4]
     """
     # TODO: Implement ODE system for shooting method
+    y = np.asarray(y)
     return [y[1], -np.pi*(y[0]+1)/4]
 
 
