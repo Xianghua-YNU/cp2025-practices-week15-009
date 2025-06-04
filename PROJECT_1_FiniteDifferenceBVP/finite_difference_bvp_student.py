@@ -168,23 +168,34 @@ def solve_bvp_scipy(n_initial_points=11):
     2. 创建初始猜测 y_initial (2×n 数组)
     3. 调用 solve_bvp 函数
     4. 检查求解是否成功并提取解
-    """
     # 创建初始网格 - 均匀分布
     x_initial = np.linspace(0, 5, n_initial_points)
     
     # 改进初始猜测：使用更合理的初始猜测
     y_initial = np.zeros((2, n_initial_points))
-    # y的初始猜测：从0到3的线性变化
-    y_initial[0] = 3 * x_initial / 5
-    # y'的初始猜测：常数0.6
-    y_initial[1] = 0.6 * np.ones(n_initial_points)
+    # y的初始猜测：二次函数，满足边界条件
+    y_initial[0] = 3 * (x_initial/5)**2  # 从0到3的二次变化
+    # y'的初始猜测：导数
+    y_initial[1] = 6 * x_initial / 25  # 3*(2x/25) = 6x/25
     
     # 调用solve_bvp，调整参数以获得更好的收敛性
     sol = solve_bvp(ode_system_for_solve_bvp, 
                    boundary_conditions_for_solve_bvp,
                    x_initial, y_initial,
-                   tol=1e-8,  # 更严格的容差
-                   max_nodes=10000)  # 允许更多节点
+                   tol=1e-6,  # 适度的容差
+                   max_nodes=5000)  # 允许更多节点
+    
+    if not sol.success:
+        # 如果第一次求解失败，尝试使用更密集的初始网格
+        x_initial = np.linspace(0, 5, 50)
+        y_initial = np.zeros((2, 50))
+        y_initial[0] = 3 * (x_initial/5)**2
+        y_initial[1] = 6 * x_initial / 25
+        sol = solve_bvp(ode_system_for_solve_bvp, 
+                       boundary_conditions_for_solve_bvp,
+                       x_initial, y_initial,
+                       tol=1e-6,
+                       max_nodes=5000)
     
     if not sol.success:
         print("Warning: solve_bvp did not converge successfully")
@@ -196,7 +207,6 @@ def solve_bvp_scipy(n_initial_points=11):
     y_solution = sol.sol(x_solution)[0]
     
     return x_solution, y_solution
-
 # ============================================================================
 # 主程序：测试和比较两种方法
 # ============================================================================
