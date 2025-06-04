@@ -162,19 +162,15 @@ def solve_bvp_scipy(n_initial_points=11):
             x_solution (np.ndarray): 解的 x 坐标数组
             y_solution (np.ndarray): 解的 y 坐标数组
     """
-    # Step 1: 创建初始网格
     x_initial = np.linspace(0, 5, n_initial_points)
-    
-    # Step 2: 创建初始猜测
+
     y_initial = np.zeros((2, n_initial_points))
     y_initial[0] = np.linspace(0, 3, n_initial_points)  # y(x) 的初始猜测
     y_initial[1] = np.ones(n_initial_points) * 0.6      # y'(x) 的初始猜测
-    
-    # Step 3: 调用 solve_bvp
+
     solution = solve_bvp(ode_system_for_solve_bvp, boundary_conditions_for_solve_bvp, 
                          x_initial, y_initial)
-    
-    # Step 4: 提取解
+ 
     if solution.success:
         x_solution = solution.x
         y_solution = solution.y[0]  # 只取 y(x)，不要 y'(x)
