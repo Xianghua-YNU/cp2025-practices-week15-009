@@ -1,7 +1,7 @@
 """
 学生模板：平方反比引力场中的运动
 文件：inverse_square_law_motion_student.py
-作者：[你的名字]
+作者：[王雪涵]
 日期：[完成日期]
 
 重要：函数名称、参数名称和返回值的结构必须与参考答案保持一致！
@@ -9,6 +9,12 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+plt.rcParams["font.family"] = ["SimHei", "WenQuanYi Micro Hei", "Heiti TC", "sans-serif"]
+
+# 可选：隐藏警告信息
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
 
 # 常量 (如果需要，学生可以自行定义或从参数传入)
 # 例如：GM = 1.0 # 引力常数 * 中心天体质量
@@ -40,7 +46,23 @@ def derivatives(t, state_vector, gm_val):
     5. 返回 [vx, vy, ax, ay]。
     """
     # TODO: 学生在此处实现代码
-    raise NotImplementedError(f"请在 {__file__} 中实现 derivatives 函数")
+    # 解包状态向量
+    x, y, vx, vy = state_vector
+    
+    # 计算距离的立方
+    r_squared = x**2 + y**2
+    r_cubed = r_squared ** 1.5
+    
+    # 避免除以零的情况
+    eps = 1e-10
+    if r_cubed < eps:
+        r_cubed = eps
+    
+    # 计算加速度
+    ax = -gm_val * x / r_cubed
+    ay = -gm_val * y / r_cubed
+    
+    return np.array([vx, vy, ax, ay])
 
 def solve_orbit(initial_conditions, t_span, t_eval, gm_val):
     """
@@ -64,7 +86,22 @@ def solve_orbit(initial_conditions, t_span, t_eval, gm_val):
     5. 设置合理的相对容差 (rtol) 和绝对容差 (atol) 以保证精度，例如 rtol=1e-7, atol=1e-9。
     """
     # TODO: 学生在此处实现代码
-    raise NotImplementedError(f"请在 {__file__} 中实现 solve_orbit 函数")
+    # 确保初始条件是NumPy数组
+    ic = np.array(initial_conditions)
+    
+    # 求解微分方程
+    solution = solve_ivp(
+        fun=derivatives,
+        t_span=t_span,
+        y0=ic,
+        t_eval=t_eval,
+        args=(gm_val,),
+        method='RK45',
+        rtol=1e-7,
+        atol=1e-9
+    )
+    
+    return solution
 
 def calculate_energy(state_vector, gm_val, m=1.0):
     """
@@ -90,7 +127,44 @@ def calculate_energy(state_vector, gm_val, m=1.0):
     8. 如果需要总能量，则乘以质量 m。
     """
     # TODO: 学生在此处实现代码
-    raise NotImplementedError(f"请在 {__file__} 中实现 calculate_energy 函数")
+    # 确保输入是NumPy数组
+    state = np.array(state_vector)
+    
+    # 处理不同维度的输入
+    if state.ndim == 1:  # 单个状态向量
+        x, y, vx, vy = state
+        r = np.sqrt(x**2 + y**2)
+        v_squared = vx**2 + vy**2
+        
+        # 避免除以零
+        eps = 1e-10
+        if r < eps:
+            r = eps
+            
+        # 计算比能
+        kinetic_energy_per_m = 0.5 * v_squared
+        potential_energy_per_m = -gm_val / r
+        specific_energy = kinetic_energy_per_m + potential_energy_per_m
+        
+        # 如果需要总能量，则乘以质量
+        return specific_energy * m if m != 1.0 else specific_energy
+    
+    else:  # 多个状态向量 (轨迹)
+        x, y, vx, vy = state[:, 0], state[:, 1], state[:, 2], state[:, 3]
+        r = np.sqrt(x**2 + y**2)
+        v_squared = vx**2 + vy**2
+        
+        # 避免除以零
+        r = np.maximum(r, 1e-10)
+        
+        # 计算比能
+        kinetic_energy_per_m = 0.5 * v_squared
+        potential_energy_per_m = -gm_val / r
+        specific_energy = kinetic_energy_per_m + potential_energy_per_m
+        
+        # 如果需要总能量，则乘以质量
+        return specific_energy * m if m != 1.0 else specific_energy
+
 
 def calculate_angular_momentum(state_vector, m=1.0):
     """
@@ -111,12 +185,79 @@ def calculate_angular_momentum(state_vector, m=1.0):
     4. 如果需要总角动量，则乘以质量 m。
     """
     # TODO: 学生在此处实现代码
-    raise NotImplementedError(f"请在 {__file__} 中实现 calculate_angular_momentum 函数")
+    # 确保输入是NumPy数组
+    state = np.array(state_vector)
+    
+    # 处理不同维度的输入
+    if state.ndim == 1:  # 单个状态向量
+        x, y, vx, vy = state
+        specific_Lz = x * vy - y * vx
+        
+        # 如果需要总角动量，则乘以质量
+        return specific_Lz * m if m != 1.0 else specific_Lz
+    
+    else:  # 多个状态向量 (轨迹)
+        x, y, vx, vy = state[:, 0], state[:, 1], state[:, 2], state[:, 3]
+        specific_Lz = x * vy - y * vx
+        
+        # 如果需要总角动量，则乘以质量
+        return specific_Lz * m if m != 1.0 else specific_Lz
 
 
 if __name__ == "__main__":
-    # --- 学生可以在此区域编写测试代码或进行实验 ---
+    # 设置常量
+    GM_val = 1.0  # 标准化单位
+    
+    # 初始条件 - 椭圆轨道
+    ic_ellipse = [1.0, 0.0, 0.0, 0.8]
+    
+    # 时间范围
+    t_start = 0
+    t_end = 20
+    t_eval = np.linspace(t_start, t_end, 500)
+    
+    # 求解轨道
+    sol_ellipse = solve_orbit(ic_ellipse, (t_start, t_end), t_eval, gm_val=GM_val)
+    x_ellipse, y_ellipse = sol_ellipse.y[0], sol_ellipse.y[1]
+    
+    # 计算能量和角动量
+    energy = calculate_energy(sol_ellipse.y.T, GM_val)
+    angular_momentum = calculate_angular_momentum(sol_ellipse.y.T)
+    
+    print(f"椭圆轨道: 初始能量 ≈ {energy[0]:.3f}")
+    print(f"椭圆轨道: 初始角动量 ≈ {angular_momentum[0]:.3f}")
+    
+    # 绘制轨道
+    plt.figure(figsize=(8, 6))
+    plt.plot(x_ellipse, y_ellipse, label='椭圆轨道')
+    plt.plot(0, 0, 'ko', markersize=8, label='中心天体')
+    plt.title('平方反比引力场中的轨道运动')
+    plt.xlabel('x 坐标')
+    plt.ylabel('y 坐标')
+    plt.legend()
+    plt.grid(True)
+    plt.axis('equal')
+    plt.show()
+    
+    # 绘制能量和角动量随时间的变化
+    plt.figure(figsize=(12, 4))
+    
+    plt.subplot(1, 2, 1)
+    plt.plot(t_eval, energy)
+    plt.title('能量随时间的变化')
+    plt.xlabel('时间')
+    plt.ylabel('能量')
+    plt.grid(True)
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(t_eval, angular_momentum)
+    plt.title('角动量随时间的变化')
+    plt.xlabel('时间')
+    plt.ylabel('角动量')
+    plt.grid(True)
     print("平方反比引力场中的运动 - 学生模板")
+    plt.tight_layout()
+    plt.show()
 
     # 任务1：实现函数并通过基础测试 (此处不设测试，依赖 tests 文件)
 
