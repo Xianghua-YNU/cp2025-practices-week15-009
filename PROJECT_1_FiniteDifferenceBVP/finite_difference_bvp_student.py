@@ -169,22 +169,13 @@ def solve_bvp_scipy(n_initial_points=11):
     3. 调用 solve_bvp 函数
     4. 检查求解是否成功并提取解
     """
-    # TODO: 在此实现 solve_bvp 方法 (预计10-15行代码)
     # 创建初始网格 - 在边界附近更密集
     x_initial = np.linspace(0, 5, n_initial_points)
     
-    # 改进初始猜测：使用有限差分解作为初始猜测
-    # 首先用有限差分法获得一个近似解
-    try:
-        x_fd, y_fd = solve_bvp_finite_difference(n_initial_points-2)
-        y_initial = np.zeros((2, n_initial_points))
-        y_initial[0] = np.interp(x_initial, x_fd, y_fd)  # y的初始猜测
-        y_initial[1] = np.gradient(y_initial[0], x_initial)  # y'的初始猜测
-    except:
-        # 如果有限差分法失败，使用改进的初始猜测
-        y_initial = np.zeros((2, n_initial_points))
-        y_initial[0] = 3 * (1 - np.exp(-x_initial/2)) / (1 - np.exp(-5/2))
-        y_initial[1] = 1.5 * np.exp(-x_initial/2) / (1 - np.exp(-5/2))
+    # 改进初始猜测：线性插值作为初始猜测
+    y_initial = np.zeros((2, n_initial_points))
+    y_initial[0] = 3 * x_initial / 5  # y的线性初始猜测
+    y_initial[1] = 0.6 * np.ones(n_initial_points)  # y'的常数初始猜测
     
     # 调用solve_bvp，调整参数以获得更好的收敛性
     sol = solve_bvp(ode_system_for_solve_bvp, boundary_conditions_for_solve_bvp,
