@@ -113,6 +113,16 @@ def solve_bvp_shooting_method(x_span, boundary_conditions, n_points=100, max_ite
     # TODO: Implement shooting method with secant method for slope adjustment
     
     # TODO: Return solution arrays
+
+    # 确保初始条件为数组形式
+    y0 = np.array([u_left, initial_slope_guess], dtype=float)
+
+    # 使用solve_ivp求解（注意参数顺序）
+    sol = solve_ivp(fun=ode_system_shooting, 
+                    t_span=x_span,
+                    y0=y0,
+                    t_eval=np.linspace(x_start, x_end, n_points))
+    
     # Validate input parameters
     if len(x_span) != 2 or x_span[1] <= x_span[0]:
         raise ValueError("x_span must be a tuple (x_start, x_end) with x_end > x_start")
