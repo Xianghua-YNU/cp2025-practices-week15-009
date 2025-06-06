@@ -92,12 +92,12 @@ def derivatives(y, t, L1, L2, m1, m2, g):
     
     num1 = -omega1**2 * np.sin(2*theta1 - 2*theta2) \
            - 2 * omega2**2 * np.sin(theta1 - theta2) \
-           - (g_param/L1) * (np.sin(theta1 - 2*theta2) + 3*np.sin(theta1))
+           - (G_param/L1) * (np.sin(theta1 - 2*theta2) + 3*np.sin(theta1))
     den1 = 3 - np.cos(2*theta1 - 2*theta2)
     domega1_dt = num1 / den1
     num2 = 4 * omega1**2 * np.sin(theta1 - theta2) \
            + omega2**2 * np.sin(2*theta1 - 2*theta2) \
-           + 2 * (g_param/L1) * (np.sin(2*theta1 - theta2) - np.sin(theta2))
+           + 2 * (G_param/L1) * (np.sin(2*theta1 - theta2) - np.sin(theta2))
     den2 = 3 - np.cos(2*theta1 - 2*theta2)
     domega2_dt = num2 / den2
     
