@@ -121,9 +121,6 @@ def solve_bvp_shooting_method(x_span, boundary_conditions, n_points=100, max_ite
     
     # TODO: Return solution arrays
 
-    # 确保初始条件为数组形式
-    y0 = np.array([u_left, initial_slope_guess], dtype=float)
-
     # Validate input parameters
     if len(x_span) != 2 or x_span[1] <= x_span[0]:
         raise ValueError("x_span must be a tuple (x_start, x_end) with x_end > x_start")
