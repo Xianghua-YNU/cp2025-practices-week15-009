@@ -27,7 +27,7 @@ def ode_system_shooting(y, t=None):
     Convert the second-order ODE u'' = -π(u+1)/4 into a first-order system:
     y1 = u, y2 = u'
     y1' = y2
-    y2' = -π²/4 * (y1+1)
+    y2' =  -π(y1+1)/4
     
     Args:
         t (float): Independent variable (time/position)
@@ -40,14 +40,14 @@ def ode_system_shooting(y, t=None):
     Hint: Return [y[1], -np.pi*(y[0]+1)/4]
     """
     # TODO: Implement ODE system for shooting method
-    # Handle both (y, t) and (t, y) parameter orders
+   # Handle both (y, t) and (t, y) parameter orders
     if isinstance(y, (int, float)) and hasattr(t, '__len__'):
         # Called as (t, y) - swap parameters
         t, y = y, t
     elif t is None:
         # Called with single argument, assume it's y and t is not needed
         pass
-        
+    
     return [y[1], -np.pi*(y[0]+1)/4]
 
 
@@ -128,11 +128,10 @@ def solve_bvp_shooting_method(x_span, boundary_conditions, n_points=100, max_ite
         raise ValueError("boundary_conditions must be a tuple (u_left, u_right)")
     if n_points < 10:
         raise ValueError("n_points must be at least 10")
-        
+    
     x_start, x_end = x_span
     u_left, u_right = boundary_conditions
     
-    # Function to solve IVP and return error at right boundary
     # Setup domain
     x = np.linspace(x_start, x_end, n_points)
     
@@ -264,7 +263,7 @@ def compare_methods_and_plot(x_span=(0, 1), boundary_conditions=(1, 1), n_points
     # TODO: Calculate and display differences
     
     # TODO: Return analysis results
-    print("Solving BVP using both methods...")
+ print("Solving BVP using both methods...")
     
     try:
         # Solve using shooting method
@@ -368,7 +367,6 @@ def test_ode_system():
     
     print("ODE system tests passed!")
 
-
 def test_boundary_conditions():
     """
     Test the boundary conditions implementation.
@@ -385,6 +383,7 @@ def test_boundary_conditions():
     assert np.allclose(bc_residual, expected), "Boundary conditions test failed"
     
     print("Boundary conditions test passed!")
+
 
 def test_shooting_method():
     """
@@ -403,6 +402,7 @@ def test_shooting_method():
     
     print(f"Shooting method: u(0) = {y[0]:.6f}, u(1) = {y[-1]:.6f}")
     print("Shooting method test passed!")
+
 
 def test_scipy_method():
     """
