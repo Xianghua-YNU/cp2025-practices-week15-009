@@ -10,7 +10,7 @@ from scipy.integrate import odeint
 import matplotlib.animation as animation
 
 # 可以在函数中使用的常量
-g_param = 9.81  # 重力加速度 (m/s^2)
+G_CONST = 9.81  # 重力加速度 (m/s^2)
 L_CONST = 0.4   # 每个摆臂的长度 (m)
 M_CONST = 1.0   # 每个摆锤的质量 (kg)
 
@@ -106,7 +106,7 @@ def derivatives(y, t, L1, L2, m1, m2, g):
     
     # return [dtheta1_dt, domega1_dt, dtheta2_dt, domega2_dt] # 取消注释并返回结果
 
-def solve_double_pendulum(initial_conditions, t_span, t_points, L_param=L_CONST, g_param):
+def solve_double_pendulum(initial_conditions, t_span, t_points, L_param=L_CONST, g_param=G_CONST):
     """
     使用 odeint 和学生实现的导数函数求解双摆的常微分方程组。
 
