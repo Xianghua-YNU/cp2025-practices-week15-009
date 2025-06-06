@@ -7,9 +7,9 @@
 u''(x) = -π(u(x)+1)/4
 边界条件：u(0) = 1, u(1) = 1
 
-学生姓名：[YOUR_NAME]
-学号：[YOUR_STUDENT_ID]
-完成日期：[COMPLETION_DATE]
+学生姓名：[杨万超]
+学号：[20231050093]
+完成日期：[2025.6.6]
 """
 
 import numpy as np
@@ -20,14 +20,14 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-def ode_system_shooting(t, y):
+def ode_system_shooting(y, t=None):
     """
     Define the ODE system for shooting method.
     
     Convert the second-order ODE u'' = -π(u+1)/4 into a first-order system:
     y1 = u, y2 = u'
     y1' = y2
-    y2' = -π(y1+1)/4
+    y2' = -π²/4 * (y1+1)
     
     Args:
         t (float): Independent variable (time/position)
@@ -40,7 +40,14 @@ def ode_system_shooting(t, y):
     Hint: Return [y[1], -np.pi*(y[0]+1)/4]
     """
     # TODO: Implement ODE system for shooting method
-    y = np.asarray(y)
+    # Handle both (y, t) and (t, y) parameter orders
+    if isinstance(y, (int, float)) and hasattr(t, '__len__'):
+        # Called as (t, y) - swap parameters
+        t, y = y, t
+    elif t is None:
+        # Called with single argument, assume it's y and t is not needed
+        pass
+        
     return [y[1], -np.pi*(y[0]+1)/4]
 
 
@@ -124,48 +131,62 @@ def solve_bvp_shooting_method(x_span, boundary_conditions, n_points=100, max_ite
         raise ValueError("boundary_conditions must be a tuple (u_left, u_right)")
     if n_points < 10:
         raise ValueError("n_points must be at least 10")
-    
+        
     x_start, x_end = x_span
     u_left, u_right = boundary_conditions
     
     # Function to solve IVP and return error at right boundary
-    def shooting_error(slope):
-        sol = solve_ivp(ode_system_shooting, x_span, [u_left, slope], 
-                        t_eval=np.linspace(x_start, x_end, n_points))
-        return sol.y[0, -1] - u_right
+    # Setup domain
+    x = np.linspace(x_start, x_end, n_points)
     
-    # Initial guesses for slope
-    m_prev = 0.0
-    m_curr = -1.0
+    # Initial guess for slope
+    m1 = -1.0  # First guess
+    y0 = [u_left, m1]  # Initial conditions [u(0), u'(0)]
     
-    # Solve with initial guesses
-    error_prev = shooting_error(m_prev)
-    error_curr = shooting_error(m_curr)
+    # Solve with first guess
+    sol1 = odeint(ode_system_shooting, y0, x)
+    u_end_1 = sol1[-1, 0]  # u(x_end) with first guess
     
-    # Secant method iteration
+    # Check if first guess is good enough
+    if abs(u_end_1 - u_right) < tolerance:
+        return x, sol1[:, 0]
+    
+    # Second guess using linear scaling
+    m2 = m1 * u_right / u_end_1 if abs(u_end_1) > 1e-12 else m1 + 1.0
+    y0[1] = m2
+    sol2 = odeint(ode_system_shooting, y0, x)
+    u_end_2 = sol2[-1, 0]  # u(x_end) with second guess
+    
+    # Check if second guess is good enough
+    if abs(u_end_2 - u_right) < tolerance:
+        return x, sol2[:, 0]
+    
+    # Iterative improvement using secant method
     for iteration in range(max_iterations):
-        if abs(error_curr) < tolerance:
-            break
-            
-        # Avoid division by zero
-        if abs(error_curr - error_prev) < 1e-12:
-            m_next = m_curr + 0.1
+        # Secant method to find better slope
+        if abs(u_end_2 - u_end_1) < 1e-12:
+            # Avoid division by zero
+            m3 = m2 + 0.1
         else:
-            m_next = m_curr - error_curr * (m_curr - m_prev) / (error_curr - error_prev)
+            m3 = m2 + (u_right - u_end_2) * (m2 - m1) / (u_end_2 - u_end_1)
+        
+        # Solve with new guess
+        y0[1] = m3
+        sol3 = odeint(ode_system_shooting, y0, x)
+        u_end_3 = sol3[-1, 0]
+        
+        # Check convergence
+        if abs(u_end_3 - u_right) < tolerance:
+            return x, sol3[:, 0]
         
         # Update for next iteration
-        m_prev, m_curr = m_curr, m_next
-        error_prev, error_curr = error_curr, shooting_error(m_next)
+        m1, m2 = m2, m3
+        u_end_1, u_end_2 = u_end_2, u_end_3
     
-    # Final solution with best slope
-    final_slope = m_curr
-    sol = solve_ivp(ode_system_shooting, x_span, [u_left, final_slope], 
-                    t_eval=np.linspace(x_start, x_end, n_points))
-    
-    if abs(error_curr) > tolerance:
-        print(f"Warning: Shooting method did not fully converge. Final error: {abs(error_curr):.2e}")
-    
-    return sol.t, sol.y[0]
+    # If not converged, return best solution with warning
+    print(f"Warning: Shooting method did not converge after {max_iterations} iterations.")
+    print(f"Final boundary error: {abs(u_end_3 - u_right):.2e}")
+    return x, sol3[:, 0]
 
 
 def solve_bvp_scipy_wrapper(x_span, boundary_conditions, n_points=50):
@@ -188,7 +209,7 @@ def solve_bvp_scipy_wrapper(x_span, boundary_conditions, n_points=50):
     # TODO: Call scipy.solve_bvp
     
     # TODO: Extract and return solution
-     # Validate input parameters
+    # Validate input parameters
     if len(x_span) != 2 or x_span[1] <= x_span[0]:
         raise ValueError("x_span must be a tuple (x_start, x_end) with x_end > x_start")
     if len(boundary_conditions) != 2:
@@ -199,24 +220,29 @@ def solve_bvp_scipy_wrapper(x_span, boundary_conditions, n_points=50):
     x_start, x_end = x_span
     u_left, u_right = boundary_conditions
     
-    # Initial mesh
+    # Setup initial mesh
     x_init = np.linspace(x_start, x_end, n_points)
     
-    # Initial guess (linear interpolation between boundary values)
-    y_init = np.zeros((2, n_points))
-    y_init[0] = np.linspace(u_left, u_right, n_points)
+    # Initial guess: linear interpolation between boundary values
+    y_init = np.zeros((2, x_init.size))
+    y_init[0] = u_left + (u_right - u_left) * (x_init - x_start) / (x_end - x_start)
+    y_init[1] = (u_right - u_left) / (x_end - x_start)  # Constant slope guess
     
-    # Solve BVP
-    sol = solve_bvp(ode_system_scipy, boundary_conditions_scipy, x_init, y_init, tol=1e-6)
-    
-    if not sol.success:
-        raise RuntimeError(f"scipy.solve_bvp failed: {sol.message}")
-    
-    # Evaluate solution on fine grid
-    x_fine = np.linspace(x_start, x_end, 100)
-    y_fine = sol.sol(x_fine)[0]
-    
-    return x_fine, y_fine
+    # Solve using scipy.solve_bvp
+    try:
+        sol = solve_bvp(ode_system_scipy, boundary_conditions_scipy, x_init, y_init)
+        
+        if not sol.success:
+            raise RuntimeError(f"scipy.solve_bvp failed: {sol.message}")
+        
+        # Generate solution on fine mesh
+        x_fine = np.linspace(x_start, x_end, 100)
+        y_fine = sol.sol(x_fine)[0]
+        
+        return x_fine, y_fine
+        
+    except Exception as e:
+        raise RuntimeError(f"Error in scipy.solve_bvp: {str(e)}")
 
 
 def compare_methods_and_plot(x_span=(0, 1), boundary_conditions=(1, 1), n_points=100):
@@ -325,21 +351,26 @@ def test_ode_system():
     Test the ODE system implementation.
     """
     print("Testing ODE system...")
-    try:
-        # Test point
-        t_test = 0.5
-        y_test = np.array([1.0, 0.5])
-        
-        # Test shooting method ODE system
-        dydt = ode_system_shooting(t_test, y_test)
-        print(f"ODE system (shooting): dydt = {dydt}")
-        
-        # Test scipy ODE system
-        dydt_scipy = ode_system_scipy(t_test, y_test)
-        print(f"ODE system (scipy): dydt = {dydt_scipy}")
-        
-    except NotImplementedError:
-        print("ODE system functions not yet implemented.")
+    
+    # Test point
+    t_test = 0.5
+    y_test = np.array([1.0, 0.5])
+    
+    # Test shooting method ODE system
+    dydt = ode_system_shooting(y_test, t_test)
+    expected = [0.5, -np.pi*(1.0+1)/4]
+    print(f"ODE system (shooting): dydt = {dydt}")
+    print(f"Expected: {expected}")
+    assert np.allclose(dydt, expected), "Shooting ODE system test failed"
+    
+    # Test scipy ODE system
+    dydt_scipy = ode_system_scipy(t_test, y_test)
+    expected_scipy = np.array([[0.5], [-np.pi*2/4]])
+    print(f"ODE system (scipy): dydt = {dydt_scipy.flatten()}")
+    print(f"Expected: {expected_scipy.flatten()}")
+    assert np.allclose(dydt_scipy, expected_scipy), "Scipy ODE system test failed"
+    
+    print("ODE system tests passed!")
 
 
 def test_boundary_conditions():
@@ -347,31 +378,68 @@ def test_boundary_conditions():
     Test the boundary conditions implementation.
     """
     print("Testing boundary conditions...")
-    try:
-        ya = np.array([1.0, 0.5])  # Left boundary
-        yb = np.array([1.0, -0.3])  # Right boundary
-        
-        bc_residual = boundary_conditions_scipy(ya, yb)
-        print(f"Boundary condition residuals: {bc_residual}")
-        
-    except NotImplementedError:
-        print("Boundary conditions function not yet implemented.")
+    
+    ya = np.array([1.0, 0.5])  # Left boundary
+    yb = np.array([1.0, -0.3])  # Right boundary
+    
+    bc_residual = boundary_conditions_scipy(ya, yb)
+    expected = np.array([0.0, 0.0])  # Both boundaries should be satisfied
+    print(f"Boundary condition residuals: {bc_residual}")
+    print(f"Expected: {expected}")
+    assert np.allclose(bc_residual, expected), "Boundary conditions test failed"
+    
+    print("Boundary conditions test passed!")
 
+def test_shooting_method():
+    """
+    Test the shooting method implementation.
+    """
+    print("Testing shooting method...")
+    
+    x_span = (0, 1)
+    boundary_conditions = (1, 1)
+    
+    x, y = solve_bvp_shooting_method(x_span, boundary_conditions, n_points=50)
+    
+    # Check boundary conditions
+    assert abs(y[0] - boundary_conditions[0]) < 1e-6, "Left boundary condition not satisfied"
+    assert abs(y[-1] - boundary_conditions[1]) < 1e-6, "Right boundary condition not satisfied"
+    
+    print(f"Shooting method: u(0) = {y[0]:.6f}, u(1) = {y[-1]:.6f}")
+    print("Shooting method test passed!")
+
+def test_scipy_method():
+    """
+    Test the scipy.solve_bvp wrapper.
+    """
+    print("Testing scipy.solve_bvp wrapper...")
+    
+    x_span = (0, 1)
+    boundary_conditions = (1, 1)
+    
+    x, y = solve_bvp_scipy_wrapper(x_span, boundary_conditions, n_points=20)
+    
+    # Check boundary conditions
+    assert abs(y[0] - boundary_conditions[0]) < 1e-6, "Left boundary condition not satisfied"
+    assert abs(y[-1] - boundary_conditions[1]) < 1e-6, "Right boundary condition not satisfied"
+    
+    print(f"scipy.solve_bvp: u(0) = {y[0]:.6f}, u(1) = {y[-1]:.6f}")
+    print("scipy.solve_bvp wrapper test passed!")
 
 if __name__ == "__main__":
     print("项目2：打靶法与scipy.solve_bvp求解边值问题")
-    print("=" * 50)
+    print("=" * 60)
     
-    # Run basic tests
+    # Run all tests
+    print("Running unit tests...")
     test_ode_system()
     test_boundary_conditions()
+    test_shooting_method()
+    test_scipy_method()
+    print("All unit tests passed!\n")
     
-    # Try to run comparison (will fail until functions are implemented)
-    try:
-        print("\nTesting method comparison...")
-        results = compare_methods_and_plot()
-        print("Method comparison completed successfully!")
-    except NotImplementedError as e:
-        print(f"Method comparison not yet implemented: {e}")
+    # Run method comparison
+    print("Running method comparison...")
+    results = compare_methods_and_plot()
     
-    print("\n请实现所有标记为 TODO 的函数以完成项目。")
+    print("\n项目2完成！所有功能已实现并测试通过。")
