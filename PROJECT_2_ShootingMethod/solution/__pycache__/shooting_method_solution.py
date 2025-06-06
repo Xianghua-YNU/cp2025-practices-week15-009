@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-项目2：打靶法与scipy.solve_bvp求解边值问题 - 学生代码模板
+项目2：打靶法与scipy.solve_bvp求解边值问题 - 参考答案
 
-本项目要求实现打靶法和scipy.solve_bvp两种方法来求解二阶线性常微分方程边值问题：
+本项目实现打靶法和scipy.solve_bvp两种方法来求解二阶线性常微分方程边值问题：
 u''(x) = -π(u(x)+1)/4
 边界条件：u(0) = 1, u(1) = 1
 
-学生姓名：[杨万超]
-学号：[20231050093]
-完成日期：[2025.6.6]
+作者：教学团队
+创建日期：2024
 """
 
 import numpy as np
@@ -24,23 +23,23 @@ def ode_system_shooting(y, t=None):
     """
     Define the ODE system for shooting method.
     
-    Convert the second-order ODE u'' = -π(u+1)/4 into a first-order system:
+    The second-order ODE: u'' + π²/4 * (u+1) = 0
+    Convert to first-order system:
     y1 = u, y2 = u'
     y1' = y2
-    y2' =  -π(y1+1)/4
+    y2' = -π²/4 * (y1+1)
     
     Args:
-        t (float): Independent variable (time/position)
-        y (array): State vector [y1, y2] where y1=u, y2=u'
+        y (array or float): State vector [y1, y2] where y1=u, y2=u' OR time t
+        t (float or array, optional): Independent variable (time/position) OR state vector
     
     Returns:
         list: Derivatives [y1', y2']
     
-    TODO: Implement the ODE system conversion
-    Hint: Return [y[1], -np.pi*(y[0]+1)/4]
+    Note: This function can handle both (y, t) and (t, y) parameter orders
+    for compatibility with different solvers and test cases.
     """
-    # TODO: Implement ODE system for shooting method
-   # Handle both (y, t) and (t, y) parameter orders
+    # Handle both (y, t) and (t, y) parameter orders
     if isinstance(y, (int, float)) and hasattr(t, '__len__'):
         # Called as (t, y) - swap parameters
         t, y = y, t
@@ -64,12 +63,9 @@ def boundary_conditions_scipy(ya, yb):
     
     Returns:
         array: Boundary condition residuals
-    
-    TODO: Implement boundary conditions
-    Hint: Return np.array([ya[0] - 1, yb[0] - 1])
     """
-    # TODO: Implement boundary conditions for scipy.solve_bvp
     return np.array([ya[0] - 1, yb[0] - 1])
+
 
 def ode_system_scipy(x, y):
     """
@@ -83,12 +79,9 @@ def ode_system_scipy(x, y):
     
     Returns:
         array: Derivatives as column vector
-    
-    TODO: Implement ODE system for scipy.solve_bvp
-    Hint: Use np.vstack to return column vector
     """
-    # TODO: Implement ODE system for scipy.solve_bvp
     return np.vstack((y[1], -np.pi*(y[0]+1)/4))
+
 
 def solve_bvp_shooting_method(x_span, boundary_conditions, n_points=100, max_iterations=10, tolerance=1e-6):
     """
@@ -109,18 +102,7 @@ def solve_bvp_shooting_method(x_span, boundary_conditions, n_points=100, max_ite
     
     Returns:
         tuple: (x_array, y_array) solution arrays
-    
-    TODO: Implement shooting method algorithm
-    Hint: Use secant method to adjust initial slope
     """
-    # TODO: Validate input parameters
-    
-    # TODO: Extract boundary conditions and setup domain
-    
-    # TODO: Implement shooting method with secant method for slope adjustment
-    
-    # TODO: Return solution arrays
-
     # Validate input parameters
     if len(x_span) != 2 or x_span[1] <= x_span[0]:
         raise ValueError("x_span must be a tuple (x_start, x_end) with x_end > x_start")
@@ -196,15 +178,7 @@ def solve_bvp_scipy_wrapper(x_span, boundary_conditions, n_points=50):
     
     Returns:
         tuple: (x_array, y_array) solution arrays
-    
-    TODO: Implement scipy.solve_bvp wrapper
-    Hint: Set up initial guess and call solve_bvp
     """
-    # TODO: Setup initial mesh and guess
-    
-    # TODO: Call scipy.solve_bvp
-    
-    # TODO: Extract and return solution
     # Validate input parameters
     if len(x_span) != 2 or x_span[1] <= x_span[0]:
         raise ValueError("x_span must be a tuple (x_start, x_end) with x_end > x_start")
@@ -252,18 +226,8 @@ def compare_methods_and_plot(x_span=(0, 1), boundary_conditions=(1, 1), n_points
     
     Returns:
         dict: Dictionary containing solutions and analysis
-    
-    TODO: Implement method comparison and visualization
-    Hint: Call both methods, plot results, calculate differences
     """
-    # TODO: Solve using both methods
-    
-    # TODO: Create comparison plot with English labels
-    
-    # TODO: Calculate and display differences
-    
-    # TODO: Return analysis results
- print("Solving BVP using both methods...")
+    print("Solving BVP using both methods...")
     
     try:
         # Solve using shooting method
@@ -340,6 +304,7 @@ def compare_methods_and_plot(x_span=(0, 1), boundary_conditions=(1, 1), n_points
         print(f"Error in method comparison: {str(e)}")
         raise
 
+
 # Test functions for development and debugging
 def test_ode_system():
     """
@@ -366,6 +331,7 @@ def test_ode_system():
     assert np.allclose(dydt_scipy, expected_scipy), "Scipy ODE system test failed"
     
     print("ODE system tests passed!")
+
 
 def test_boundary_conditions():
     """
@@ -422,8 +388,9 @@ def test_scipy_method():
     print(f"scipy.solve_bvp: u(0) = {y[0]:.6f}, u(1) = {y[-1]:.6f}")
     print("scipy.solve_bvp wrapper test passed!")
 
+
 if __name__ == "__main__":
-    print("项目2：打靶法与scipy.solve_bvp求解边值问题")
+    print("项目2：打靶法与scipy.solve_bvp求解边值问题 - 参考答案")
     print("=" * 60)
     
     # Run all tests

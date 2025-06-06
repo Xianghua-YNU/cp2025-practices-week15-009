@@ -51,10 +51,49 @@ def solve_bvp_finite_difference(n):
     6. 处理边界条件对右端向量的影响
     """
     # TODO: 在此实现有限差分法 (预计30-40行代码)
-    # [STUDENT_CODE_HERE]
+    # 创建网格
+    h = 5.0 / (n + 1)
+    x_grid = np.linspace(0, 5, n + 2)
     
-    raise NotImplementedError("请在此处实现有限差分法")
-
+    # 初始化矩阵A和向量b
+    A = np.zeros((n, n))
+    b = np.zeros(n)
+    
+    # 填充矩阵A和向量b
+    for i in range(n):
+        x = x_grid[i+1]  # 内部点从x_grid[1]到x_grid[n]
+        
+        # 中心差分系数
+        a_im1 = 1/h**2 - np.sin(x)/(2*h)  # y_{i-1}的系数
+        a_i = -2/h**2 + np.exp(x)          # y_i的系数
+        a_ip1 = 1/h**2 + np.sin(x)/(2*h)   # y_{i+1}的系数
+        
+        # 填充矩阵A
+        if i > 0:
+            A[i, i-1] = a_im1
+        A[i, i] = a_i
+        if i < n-1:
+            A[i, i+1] = a_ip1
+        
+        # 填充向量b
+        b[i] = x**2
+    
+    # 处理边界条件对右端向量的影响
+    # y(0) = 0 影响第一个方程 (i=0)
+    b[0] -= (1/h**2 - np.sin(x_grid[1])/(2*h)) * 0
+    # y(5) = 3 影响最后一个方程 (i=n-1)
+    b[-1] -= (1/h**2 + np.sin(x_grid[-2])/(2*h)) * 3
+    
+    # 解线性系统
+    y_internal = solve(A, b)
+    
+    # 组合完整解（包括边界点）
+    y_solution = np.zeros(n + 2)
+    y_solution[0] = 0  # 左边界
+    y_solution[-1] = 3  # 右边界
+    y_solution[1:-1] = y_internal
+    
+    return x_grid, y_solution
 
 # ============================================================================
 # 方法2：scipy.integrate.solve_bvp 方法
@@ -86,10 +125,10 @@ def ode_system_for_solve_bvp(x, y):
     3. 使用 np.vstack 组合返回结果
     """
     # TODO: 在此实现一阶ODE系统 (预计5-8行代码)
-    # [STUDENT_CODE_HERE]
-    
-    raise NotImplementedError("请在此处实现ODE系统")
-
+    dydx = np.zeros_like(y)
+    dydx[0] = y[1]  # dy/dx = y'
+    dydx[1] = -np.sin(x) * y[1] - np.exp(x) * y[0] + x**2  # dy'/dx
+    return dydx
 
 def boundary_conditions_for_solve_bvp(ya, yb):
     """
@@ -109,10 +148,7 @@ def boundary_conditions_for_solve_bvp(ya, yb):
     3. 返回残差数组
     """
     # TODO: 在此实现边界条件 (预计1-2行代码)
-    # [STUDENT_CODE_HERE]
-    
-    raise NotImplementedError("请在此处实现边界条件")
-
+    return np.array([ya[0], yb[0] - 3])
 
 def solve_bvp_scipy(n_initial_points=11):
     """
@@ -125,20 +161,23 @@ def solve_bvp_scipy(n_initial_points=11):
         tuple: (x_solution, y_solution)
             x_solution (np.ndarray): 解的 x 坐标数组
             y_solution (np.ndarray): 解的 y 坐标数组
-    
-    TODO: 实现 solve_bvp 方法
-    Hints:
-    1. 创建初始网格 x_initial
-    2. 创建初始猜测 y_initial (2×n 数组)
-    3. 调用 solve_bvp 函数
-    4. 检查求解是否成功并提取解
     """
-    # TODO: 在此实现 solve_bvp 方法 (预计10-15行代码)
-    # [STUDENT_CODE_HERE]
+    x_initial = np.linspace(0, 5, n_initial_points)
+
+    y_initial = np.zeros((2, n_initial_points))
+    y_initial[0] = np.linspace(0, 3, n_initial_points)  # y(x) 的初始猜测
+    y_initial[1] = np.ones(n_initial_points) * 0.6      # y'(x) 的初始猜测
+
+    solution = solve_bvp(ode_system_for_solve_bvp, boundary_conditions_for_solve_bvp, 
+                         x_initial, y_initial)
+ 
+    if solution.success:
+        x_solution = solution.x
+        y_solution = solution.y[0]  # 只取 y(x)，不要 y'(x)
+        return x_solution, y_solution
+    else:
+        raise RuntimeError("solve_bvp failed to converge")
     
-    raise NotImplementedError("请在此处实现 solve_bvp 方法")
-
-
 # ============================================================================
 # 主程序：测试和比较两种方法
 # ============================================================================
