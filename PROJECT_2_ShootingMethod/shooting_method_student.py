@@ -344,7 +344,6 @@ def compare_methods_and_plot(x_span=(0, 1), boundary_conditions=(1, 1), n_points
         print(f"Error in method comparison: {str(e)}")
         raise
 
-
 # Test functions for development and debugging
 def test_ode_system():
     """
